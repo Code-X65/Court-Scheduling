@@ -1,0 +1,167 @@
+{
+  "judges": [
+    {
+      "id": "1",
+      "name": "Hon. Justice Adeyemi",
+      "specializations": [
+        "criminal",
+        "civil"
+      ],
+      "available_days": [
+        "monday",
+        "tuesday",
+        "wednesday",
+        "thursday",
+        "friday"
+      ],
+      "max_hearings_per_day": 5,
+      "is_active": true
+    },
+    {
+      "id": "2",
+      "name": "Hon. Justice Okon",
+      "specializations": [
+        "family",
+        "commercial"
+      ],
+      "available_days": [
+        "monday",
+        "wednesday",
+        "friday"
+      ],
+      "max_hearings_per_day": 4,
+      "is_active": true
+    },
+    {
+      "id": "3",
+      "name": "Hon. Justice Bello",
+      "specializations": [
+        "land",
+        "constitutional"
+      ],
+      "available_days": [
+        "tuesday",
+        "thursday"
+      ],
+      "max_hearings_per_day": 3,
+      "is_active": true
+    },
+    {
+      "name": "gag",
+      "specializations": [
+        "family"
+      ],
+      "available_days": [
+        "tuesday"
+      ],
+      "max_hearings_per_day": 4,
+      "id": "sLJtJtrpgfU"
+    },
+    {
+      "name": "Mr judge okon",
+      "specializations": [
+        "civil"
+      ],
+      "available_days": [
+        "monday"
+      ],
+      "max_hearings_per_day": 4,
+      "id": "OpS_OuidEig"
+    }
+  ],
+  "courtrooms": [
+    {
+      "id": "1",
+      "name": "Court 1",
+      "capacity": 60,
+      "is_active": true
+    },
+    {
+      "id": "2",
+      "name": "Court 2",
+      "capacity": 50,
+      "is_active": true
+    },
+    {
+      "id": "3",
+      "name": "Court 3",
+      "capacity": 40,
+      "is_active": true
+    },
+    {
+      "name": "court 3A",
+      "capacity": 30,
+      "id": "T0XwW7C3qZc"
+    }
+  ],
+  "cases": [
+    {
+      "id": "1",
+      "case_number": "FHC/LAG/CR/001/2024",
+      "title": "FRN v. Adeyemi",
+      "case_type": "criminal",
+      "num_parties": 3,
+      "priority": "urgent",
+      "status": "pending",
+      "assigned_judge_id": 1,
+      "assigned_judge_name": "Hon. Justice Adeyemi",
+      "notes": "",
+      "created_at": "2024-01-15"
+    },
+    {
+      "id": "2",
+      "case_number": "FHC/LAG/CV/002/2024",
+      "title": "ABC Ltd v. XYZ Corp",
+      "case_type": "civil",
+      "num_parties": 2,
+      "priority": "normal",
+      "status": "pending",
+      "assigned_judge_id": 1,
+      "assigned_judge_name": "Hon. Justice Adeyemi",
+      "notes": "",
+      "created_at": "2024-01-16"
+    },
+    {
+      "id": "3",
+      "case_number": "FHC/LAG/FM/003/2024",
+      "title": "Mary v. John",
+      "case_type": "family",
+      "num_parties": 2,
+      "priority": "urgent",
+      "status": "scheduled",
+      "assigned_judge_id": 2,
+      "assigned_judge_name": "Hon. Justice Okon",
+      "notes": "",
+      "created_at": "2024-01-17"
+    },
+    {
+      "case_number": "FHC/HRC/0001",
+      "title": "Adeyemi",
+      "case_type": "criminal",
+      "num_parties": 2,
+      "priority": "normal",
+      "assigned_judge_id": 1,
+      "notes": "hjd",
+      "id": "1yy8OXrYwNo"
+    }
+  ],
+  "schedules": [
+    {
+      "id": "1",
+      "week_start_date": "2024-01-22",
+      "generated_at": "2024-01-20T10:30:00",
+      "scheduled_count": 4,
+      "unscheduled_count": 0,
+      "conflict_count": 0
+    }
+  ],
+  "dashboardStats": {
+    "total_cases": 3,
+    "pending_cases": 2,
+    "scheduled_this_week": 5,
+    "total_judges": 3,
+    "total_courtrooms": 3,
+    "last_schedule_run": "2024-01-20T10:30:00"
+  },
+  "$schema": "./node_modules/json-server/schema.json"
+}
