@@ -11,7 +11,12 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use((config) => {
   const creds = sessionStorage.getItem('auth')
   if (creds) {
-    config.headers['Authorization'] = `Basic ${creds}`
+    config.headers.Authorization = `Basic ${creds}`
+  }
+  // Optional: let callers append custom headers per-request via options.headers
+  if (config.options?.headers) {
+    Object.assign(config.headers, config.options.headers)
+    delete config.options.headers
   }
   return config
 })
@@ -23,10 +28,20 @@ apiClient.interceptors.response.use(
     if (err.response?.status === 401) {
       sessionStorage.removeItem('auth')
       sessionStorage.removeItem('username')
+      sessionStorage.removeItem('role')
       window.location.href = '/login?expired=1'
     }
     return Promise.reject(err)
   }
 )
+
+/**
+ * Unwrap a backend response envelope.
+ * Backend returns: { success: true, data: ..., message: '...' }
+ * or:               { success: false, error: { message, detail } }
+ */
+export function unwrap(response) {
+  return response.data
+}
 
 export default apiClient

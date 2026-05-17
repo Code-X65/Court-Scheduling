@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react'
-import client from '../api/client.js'
+import { useState } from 'react'
+import { useJudges } from '../hooks/useJudges.js'
 import Modal from '../components/Modal.jsx'
 import ConfirmDialog from '../components/ConfirmDialog.jsx'
 import { Badge } from '../components/StatusBadge.jsx'
@@ -8,11 +8,26 @@ import { toast } from '../components/Toast.jsx'
 const SPECIALIZATIONS = ['criminal','civil','family','commercial','land','constitutional']
 const DAYS = ['monday','tuesday','wednesday','thursday','friday']
 
-const emptyForm = { name: '', specializations: [], available_days: [], max_hearings_per_day: 4 }
+const RANKS = ['Chief Judge', 'High Court Judge', 'Magistrate', 'Senior Advocate']
+const GENDERS = ['Male', 'Female', 'Other']
+const DIVISIONS = ['Abuja', 'Lagos', 'Kano', 'Port Harcourt', 'Enugu']
+
+const emptyForm = { 
+  name: '', 
+  email: '', 
+  phone: '', 
+  rank: 'High Court Judge', 
+  gender: 'Male', 
+  division: 'Abuja',
+  specializations: [], 
+  available_days: [], 
+  max_hearings_per_day: 4 
+}
 
 function validate(form) {
   const errors = {}
   if (!form.name || form.name.trim().length < 3) errors.name = 'Name must be at least 3 characters.'
+  if (!form.email || !/^\S+@\S+\.\S+$/.test(form.email)) errors.email = 'Valid email is required.'
   if (form.specializations.length === 0) errors.specializations = 'Select at least one specialization.'
   if (form.available_days.length === 0) errors.available_days = 'Select at least one day.'
   const n = parseInt(form.max_hearings_per_day)
@@ -21,8 +36,14 @@ function validate(form) {
 }
 
 export default function Judges() {
-  const [judges, setJudges]   = useState([])
-  const [loading, setLoading] = useState(true)
+  const {
+    judges,
+    loading,
+    createJudge,
+    updateJudge,
+    deleteJudge
+  } = useJudges()
+
   const [modal, setModal]     = useState(false)
   const [editing, setEditing] = useState(null)
   const [form, setForm]       = useState(emptyForm)
@@ -30,15 +51,23 @@ export default function Judges() {
   const [saving, setSaving]   = useState(false)
   const [confirm, setConfirm] = useState(null) // { judge, action }
 
-  const load = () => {
-    setLoading(true)
-    client.get('/judges').then(r => setJudges(r.data)).catch(() => {}).finally(() => setLoading(false))
-  }
-
-  useEffect(() => { load() }, [])
-
   const openAdd = () => { setEditing(null); setForm(emptyForm); setErrors({}); setModal(true) }
-  const openEdit = (j) => { setEditing(j); setForm({ name: j.name, specializations: [...j.specializations], available_days: [...j.available_days], max_hearings_per_day: j.max_hearings_per_day }); setErrors({}); setModal(true) }
+  const openEdit = (j) => { 
+    setEditing(j)
+    setForm({ 
+      name: j.name, 
+      email: j.email || '', 
+      phone: j.phone || '', 
+      rank: j.rank || 'High Court Judge', 
+      gender: j.gender || 'Male', 
+      division: j.division || 'Abuja',
+      specializations: [...j.specializations], 
+      available_days: [...j.available_days], 
+      max_hearings_per_day: j.max_hearings_per_day 
+    })
+    setErrors({})
+    setModal(true) 
+  }
 
   const toggleArr = (key, val) => setForm(f => ({
     ...f,
@@ -51,13 +80,13 @@ export default function Judges() {
     setSaving(true)
     try {
       if (editing) {
-        await client.put(`/judges/${editing.id}`, form)
+        await updateJudge({ id: editing.id, payload: form })
         toast('Judge updated successfully.')
       } else {
-        await client.post('/judges', form)
+        await createJudge(form)
         toast('Judge added successfully.')
       }
-      setModal(false); load()
+      setModal(false)
     } catch (e) {
       const msg = e.response?.data?.detail || 'An error occurred.'
       toast(msg, 'error')
@@ -67,18 +96,27 @@ export default function Judges() {
   const handleToggleActive = async (judge) => {
     try {
       if (judge.is_active) {
-        await client.delete(`/judges/${judge.id}`)
+        await updateJudge({ id: judge.id, payload: { ...judge, is_active: false } })
         toast(`${judge.name} deactivated.`, 'warning')
       } else {
-        await client.put(`/judges/${judge.id}`, { ...judge, is_active: true })
+        await updateJudge({ id: judge.id, payload: { ...judge, is_active: true } })
         toast(`${judge.name} reactivated.`, 'success')
       }
-      load()
     } catch { toast('Failed to update judge.', 'error') }
   }
 
   const isDirty = editing
-    ? JSON.stringify(form) !== JSON.stringify({ name: editing.name, specializations: [...editing.specializations], available_days: [...editing.available_days], max_hearings_per_day: editing.max_hearings_per_day })
+    ? JSON.stringify(form) !== JSON.stringify({ 
+        name: editing.name, 
+        email: editing.email || '', 
+        phone: editing.phone || '', 
+        rank: editing.rank || 'High Court Judge', 
+        gender: editing.gender || 'Male', 
+        division: editing.division || 'Abuja',
+        specializations: [...editing.specializations], 
+        available_days: [...editing.available_days], 
+        max_hearings_per_day: editing.max_hearings_per_day 
+      })
     : JSON.stringify(form) !== JSON.stringify(emptyForm)
 
   return (
@@ -100,6 +138,7 @@ export default function Judges() {
             <thead>
               <tr>
                 <th>Judge</th>
+                <th>Division / Rank</th>
                 <th>Specializations</th>
                 <th>Available Days</th>
                 <th>Max/Day</th>
@@ -109,14 +148,21 @@ export default function Judges() {
             </thead>
             <tbody>
               {loading ? Array(4).fill(0).map((_, i) => (
-                <tr key={i}><td colSpan={6}><div className="skeleton" style={{ height: '1rem', margin: '0.25rem 0' }} /></td></tr>
+                <tr key={i}><td colSpan={7}><div className="skeleton" style={{ height: '1rem', margin: '0.25rem 0' }} /></td></tr>
               )) : judges.length === 0 ? (
-                <tr><td colSpan={6}>
+                <tr><td colSpan={7}>
                   <div className="table-empty"><div className="table-empty-icon">⚖️</div><p>No judges yet. Add one to get started.</p></div>
                 </td></tr>
               ) : judges.map(j => (
                 <tr key={j.id}>
-                  <td style={{ fontWeight: 500 }}>{j.name}</td>
+                  <td>
+                    <div style={{ fontWeight: 600 }}>{j.name}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{j.email}</div>
+                  </td>
+                  <td>
+                    <div style={{ fontSize: '0.875rem', fontWeight: 500 }}>{j.division}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{j.rank}</div>
+                  </td>
                   <td>
                     <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                       {j.specializations.map(s => <Badge key={s} value={s} />)}
@@ -149,13 +195,50 @@ export default function Judges() {
       </div>
 
       {/* Add/Edit Modal */}
-      <Modal isOpen={modal} onClose={() => setModal(false)} title={editing ? 'Edit Judge' : 'Add Judge'} dirty={isDirty}>
+      <Modal isOpen={modal} onClose={() => setModal(false)} title={editing ? 'Edit Judge' : 'Add Judge'} dirty={isDirty} width="600px">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-          <div className="form-group">
-            <label className="form-label">Full Name *</label>
-            <input className={`form-input${errors.name ? ' error' : ''}`} placeholder="Hon. Justice Firstname Surname"
-              value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
-            {errors.name && <span className="form-error">{errors.name}</span>}
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Full Name *</label>
+              <input className={`form-input${errors.name ? ' error' : ''}`} placeholder="Hon. Justice Firstname Surname"
+                value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+              {errors.name && <span className="form-error">{errors.name}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Rank</label>
+              <select className="form-select" value={form.rank} onChange={e => setForm(f => ({ ...f, rank: e.target.value }))}>
+                {RANKS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+          </div>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Email Address *</label>
+              <input className={`form-input${errors.email ? ' error' : ''}`} type="email" placeholder="judge@court.gov.ng"
+                value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+              {errors.email && <span className="form-error">{errors.email}</span>}
+            </div>
+            <div className="form-group">
+              <label className="form-label">Phone Number</label>
+              <input className="form-input" placeholder="+234 ..."
+                value={form.phone} onChange={e => setForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+          </div>
+
+          <div className="form-grid">
+            <div className="form-group">
+              <label className="form-label">Division</label>
+              <select className="form-select" value={form.division} onChange={e => setForm(f => ({ ...f, division: e.target.value }))}>
+                {DIVISIONS.map(d => <option key={d} value={d}>{d}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="form-label">Gender</label>
+              <select className="form-select" value={form.gender} onChange={e => setForm(f => ({ ...f, gender: e.target.value }))}>
+                {GENDERS.map(g => <option key={g} value={g}>{g}</option>)}
+              </select>
+            </div>
           </div>
 
           <div className="form-group">
@@ -188,11 +271,11 @@ export default function Judges() {
             <label className="form-label">Max Hearings Per Day *</label>
             <input className={`form-input${errors.max_hearings_per_day ? ' error' : ''}`} type="number" min={1} max={8}
               value={form.max_hearings_per_day} onChange={e => setForm(f => ({ ...f, max_hearings_per_day: e.target.value }))} style={{ maxWidth: '120px' }} />
-            <span className="form-help">How many hearings this judge can handle in one day (1–8)</span>
+            <span className="form-help">Daily capacity limit (1–8 hearings)</span>
             {errors.max_hearings_per_day && <span className="form-error">{errors.max_hearings_per_day}</span>}
           </div>
 
-          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', paddingTop: '1.25rem', borderTop: '1px solid var(--border)' }}>
             <button className="btn btn-secondary" onClick={() => setModal(false)}>Cancel</button>
             <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
               {saving ? <><span className="spinner spinner-white" /> Saving...</> : editing ? 'Save Changes' : 'Add Judge'}

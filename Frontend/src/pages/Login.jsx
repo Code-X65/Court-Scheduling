@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext.jsx'
 import client from '../api/client.js'
 
 export default function Login() {
+  const { login, isAuthenticated } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading]   = useState(false)
@@ -12,28 +14,47 @@ export default function Login() {
 
   useEffect(() => {
     if (params.get('expired')) setError('Your session has expired. Please log in again.')
-    if (sessionStorage.getItem('auth')) navigate('/dashboard')
-  }, [])
+    if (isAuthenticated) navigate('/dashboard')
+  }, [isAuthenticated])
+
+  const isDemo = import.meta.env.VITE_DEMO_MODE === 'true'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
-    if (!username || !password) { setError('Please enter both username and password.'); return }
-    setLoading(true); setError('')
+    if (!username || !password) { 
+      setError('Please enter both username and password.')
+      return 
+    }
+    
+    setLoading(true)
+    setError('')
+
     try {
-      const encoded = btoa(`${username}:${password}`)
-      sessionStorage.setItem('auth', encoded)
-      sessionStorage.setItem('username', username)
-      // Demo mode: accept any credentials if API is unavailable
-      if (import.meta.env.VITE_DEMO_MODE === 'true' || import.meta.env.MODE === 'development') {
-        navigate('/dashboard')
-        return
+      if (isDemo) {
+        // --- Demo / mock path ---
+        await new Promise(r => setTimeout(r, 800))
+        if (password.length < 4) throw new Error('Password too short.')
+        let role = 'admin'
+        if (username.toLowerCase().includes('judge')) role = 'judge'
+        else if (username.toLowerCase().includes('clerk')) role = 'clerk'
+        login({ username, role })
+        sessionStorage.setItem('username', username)
+        sessionStorage.setItem('role', role)
+      } else {
+        // --- Real API path ---
+        const r = await client.post('/login', { username, password })
+        const { user, authBase64 } = r.data.data
+        // client.js redirect interceptor reads sessionStorage['auth'] on every request
+        sessionStorage.setItem('auth', authBase64)
+        sessionStorage.setItem('username', user.username)
+        sessionStorage.setItem('role', user.role)
+        login(user)
       }
-      await client.get('/auth/verify')
       navigate('/dashboard')
-    } catch {
-      sessionStorage.removeItem('auth')
-      sessionStorage.removeItem('username')
-      setError('Invalid username or password.')
+    } catch (err) {
+      const detail = err.response?.data?.error?.message || err.message
+      setError(detail === 'Password too short.' ? 'Password must be at least 4 characters.' : 'Invalid username or password.')
+    } finally {
       setLoading(false)
     }
   }

@@ -1,26 +1,40 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import client from '../api/client.js'
+import { usePreferences } from '../context/PreferencesContext.jsx'
+import { useQuery } from '../hooks/useQuery.js'
 
 const STAT_CONFIG = [
-  { key: 'total_cases',        label: 'Total Cases',        icon: '⚖', link: '/cases',            color: '#0B1F3A' },
-  { key: 'pending_cases',      label: 'Pending Cases',      icon: '⏳', link: '/cases?status=pending', color: '#B7770D' },
-  { key: 'scheduled_this_week',label: 'Scheduled This Week',icon: '📅', link: '/schedule',         color: '#1A5276' },
-  { key: 'total_judges',       label: 'Active Judges',      icon: '👨‍⚖️', link: '/judges',           color: '#1D7A4E' },
-  { key: 'total_courtrooms',   label: 'Active Courtrooms',  icon: '🏛', link: '/courtrooms',       color: '#5B2C82' },
+  { key: 'total_cases',        label: 'Total Cases',        icon: '⚖', link: '/cases',            color: 'var(--navy)', size: 'small' },
+  { key: 'pending_cases',      label: 'Pending Cases',      icon: '⏳', link: '/cases?status=pending', color: 'var(--commercial)', size: 'small' },
+  { key: 'scheduled_this_week',label: 'Scheduled This Week',icon: '📅', link: '/schedule',         color: 'var(--civil)', size: 'small' },
+  { key: 'upcoming_hearings',  label: 'Upcoming Hearings',  type: 'list',  color: 'var(--family)', size: 'large' },
+  { key: 'workload_chart',     label: 'Judge Workload',     type: 'chart', color: 'var(--constitutional)', size: 'large' },
 ]
 
 export default function Dashboard() {
-  const [stats, setStats] = useState(null)
-  const [loading, setLoading] = useState(true)
+  const { preferences, updatePreference } = usePreferences()
+  const { data: stats, loading } = useQuery('/dashboard/stats')
+  const [isCustomizing, setIsCustomizing] = useState(false)
   const navigate = useNavigate()
 
-  useEffect(() => {
-    client.get('/dashboard/stats')
-      .then(r => setStats(r.data))
-      .catch(() => {})
-      .finally(() => setLoading(false))
-  }, [])
+  const visibleWidgets = preferences.dashboardWidgets || []
+
+  const toggleWidget = (key) => {
+    const next = visibleWidgets.includes(key) 
+      ? visibleWidgets.filter(k => k !== key) 
+      : [...visibleWidgets, key]
+    updatePreference('dashboardWidgets', next)
+  }
+
+  const moveWidget = (key, dir) => {
+    const idx = visibleWidgets.indexOf(key)
+    if (idx === -1) return
+    const next = [...visibleWidgets]
+    const target = idx + dir
+    if (target < 0 || target >= next.length) return
+    [next[idx], next[target]] = [next[target], next[idx]]
+    updatePreference('dashboardWidgets', next)
+  }
 
   const formatDate = (dt) => {
     if (!dt) return 'Never'
@@ -34,37 +48,93 @@ export default function Dashboard() {
           <h1>Dashboard</h1>
           <p className="page-header-sub">System overview — {new Date().toLocaleDateString('en-GB', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
         </div>
+        <button className={`btn ${isCustomizing ? 'btn-primary' : 'btn-secondary'}`} onClick={() => setIsCustomizing(!isCustomizing)}>
+          {isCustomizing ? 'Finish Customizing' : '⚙ Customize Dashboard'}
+        </button>
       </div>
 
-      {/* Stat cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
-        {STAT_CONFIG.map(({ key, label, icon, link, color }, i) => (
-          <button
-            key={key}
-            onClick={() => navigate(link)}
-            className="card"
-            style={{
-              padding: '1.5rem', textAlign: 'left', border: 'none', cursor: 'pointer',
-              transition: 'transform 160ms, box-shadow 160ms',
-              animationDelay: `${i * 60}ms`,
-            }}
-            onMouseOver={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)' }}
-            onMouseOut={e => { e.currentTarget.style.transform = ''; e.currentTarget.style.boxShadow = '' }}
-          >
-            <div style={{ fontSize: '1.6rem', marginBottom: '0.75rem' }}>{icon}</div>
-            {loading ? (
-              <div className="skeleton" style={{ width: '60px', height: '2rem', marginBottom: '0.5rem' }} />
-            ) : (
-              <div style={{ fontSize: '2rem', fontFamily: "'Libre Baskerville', serif", fontWeight: 700, color, lineHeight: 1, marginBottom: '0.35rem' }}>
-                {stats?.[key] ?? '—'}
+      {isCustomizing && (
+        <div className="card animate-in" style={{ padding: '1.25rem', marginBottom: '1.5rem', background: 'var(--bg-accent)', border: '1px dashed var(--navy)' }}>
+          <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.75rem' }}>Select widgets to display on your dashboard:</div>
+          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
+            {STAT_CONFIG.map(s => (
+              <label key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', cursor: 'pointer' }}>
+                <input type="checkbox" checked={visibleWidgets.includes(s.key)} onChange={() => toggleWidget(s.key)} />
+                {s.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Widget Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem', marginBottom: '2rem' }}>
+        {visibleWidgets.map((key, i) => {
+          const config = STAT_CONFIG.find(s => s.key === key)
+          if (!config) return null
+          
+          const isLarge = config.size === 'large'
+          
+          return (
+            <div
+              key={key}
+              className="card"
+              style={{
+                padding: '1.5rem', textAlign: 'left', 
+                gridColumn: isLarge ? 'span 2' : 'auto',
+                transition: 'transform 160ms, box-shadow 160ms',
+                animationDelay: `${i * 60}ms`,
+                position: 'relative',
+                display: 'flex', flexDirection: 'column', gap: '0.75rem'
+              }}
+            >
+              {isCustomizing && (
+                <div style={{ position: 'absolute', top: '0.5rem', right: '0.5rem', display: 'flex', gap: '0.25rem' }}>
+                  <button className="btn btn-secondary btn-sm" onClick={() => moveWidget(key, -1)}>←</button>
+                  <button className="btn btn-secondary btn-sm" onClick={() => moveWidget(key, 1)}>→</button>
+                  <button className="btn btn-sm" style={{ background: '#fef2f2', color: 'var(--criminal)' }} onClick={() => toggleWidget(key)}>✕</button>
+                </div>
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ fontSize: '1.4rem' }}>{config.icon || '📈'}</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {config.label}
+                </div>
               </div>
-            )}
-            <div style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-              {label}
+
+              {loading ? (
+                <div className="skeleton" style={{ height: isLarge ? '120px' : '40px' }} />
+              ) : config.type === 'chart' ? (
+                <div style={{ height: '140px', background: 'var(--bg-accent)', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', gap: '1rem', padding: '1rem' }}>
+                  {[40, 70, 55, 90, 30].map((h, i) => (
+                    <div key={i} style={{ flex: 1, height: `${h}%`, background: config.color, borderRadius: '2px 2px 0 0', opacity: 0.8 }} />
+                  ))}
+                </div>
+              ) : config.type === 'list' ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {[1, 2, 3].map(x => (
+                    <div key={x} style={{ fontSize: '0.8rem', padding: '0.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                      <span style={{ fontWeight: 500 }}>FHC/ABJ/CR/0{x}2/24</span>
+                      <span style={{ color: 'var(--text-muted)' }}>10:00 AM</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div style={{ fontSize: '2rem', fontFamily: "'Libre Baskerville', serif", fontWeight: 700, color: config.color, lineHeight: 1 }}>
+                    {stats?.[key] ?? '—'}
+                  </div>
+                  {!isCustomizing && config.link && (
+                    <button className="btn btn-secondary btn-sm" style={{ alignSelf: 'flex-start', marginTop: 'auto' }} onClick={() => navigate(config.link)}>
+                      View Details →
+                    </button>
+                  )}
+                </>
+              )}
             </div>
-            <div style={{ marginTop: '0.75rem', fontSize: '0.75rem', color, fontWeight: 500 }}>View →</div>
-          </button>
-        ))}
+          )
+        })}
       </div>
 
       {/* Last run */}
