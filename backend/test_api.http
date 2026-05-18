@@ -1,0 +1,115 @@
+
+
+@baseUrl = http://localhost:8000
+@token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTc3OTAwMDMwNn0.8k8bRj1C6C9fOiLg3kRvZI-3ZrsY26keVkJJsMjtdw8
+
+### ── HEALTH CHECK ────────────────────────────────────────────────────────────
+GET {{baseUrl}}/health
+
+### ── AUTH: Login ─────────────────────────────────────────────────────────────
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/x-www-form-urlencoded
+
+username=admin&password=Admin@1234
+
+### ── AUTH: Get current user ──────────────────────────────────────────────────
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{token}}
+
+### ── JUDGES: List all judges ────────────────────────────────────────────────
+GET {{baseUrl}}/api/judges/
+
+### ── JUDGES: Add a new judge ────────────────────────────────────────────────
+POST {{baseUrl}}/api/judges/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "judge_code": "J009",
+  "name": "Justice Okafor",
+  "specialisations": ["Civil", "Land"],
+  "court_location": "High Court Lagos"
+}
+
+### ── JUDGES: Update judge availability ──────────────────────────────────────
+PATCH {{baseUrl}}/api/judges/REPLACE_WITH_JUDGE_ID
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "is_available": false
+}
+
+### ── COURTROOMS: List all courtrooms ────────────────────────────────────────
+GET {{baseUrl}}/api/courtrooms/
+
+### ── COURTROOMS: Add a courtroom ────────────────────────────────────────────
+POST {{baseUrl}}/api/courtrooms/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "room_code": "CR09",
+  "name": "Courtroom 9",
+  "capacity": 18,
+  "location": "Annex C"
+}
+
+### ── CASES: Register a new case ─────────────────────────────────────────────
+# First get a judge_id from GET /api/judges/ and courtroom_id from GET /api/courtrooms/
+POST {{baseUrl}}/api/cases/
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "case_number":  "CASE00001",
+  "case_type":    "Criminal",
+  "num_parties":  4,
+  "priority":     "High",
+  "judge_id":     "REPLACE_WITH_JUDGE_ID",
+  "courtroom_id": "REPLACE_WITH_COURTROOM_ID",
+  "description":  "Armed robbery case – 4 defendants"
+}
+
+### ── CASES: List all cases ──────────────────────────────────────────────────
+GET {{baseUrl}}/api/cases/
+Authorization: Bearer {{token}}
+
+### ── CASES: List only pending cases ─────────────────────────────────────────
+GET {{baseUrl}}/api/cases/?status=pending
+Authorization: Bearer {{token}}
+
+### ── CASES: Trigger AI scheduling ───────────────────────────────────────────
+POST {{baseUrl}}/api/cases/REPLACE_WITH_CASE_ID/schedule
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "case_id": "REPLACE_WITH_CASE_ID",
+  "proposed_start": "2025-09-01T09:00:00"
+}
+
+### ── TIMETABLE: View all confirmed hearings ─────────────────────────────────
+GET {{baseUrl}}/api/timetable
+Authorization: Bearer {{token}}
+
+### ── PENDING: View all conflicted cases ─────────────────────────────────────
+GET {{baseUrl}}/api/pending
+Authorization: Bearer {{token}}
+
+### ── PENDING: View only unreviewed conflicts ────────────────────────────────
+GET {{baseUrl}}/api/pending?reviewed=false
+Authorization: Bearer {{token}}
+
+### ── PENDING: Resolve a conflict ────────────────────────────────────────────
+PATCH {{baseUrl}}/api/pending/REPLACE_WITH_QUEUE_ID/resolve
+Content-Type: application/json
+Authorization: Bearer {{token}}
+
+{
+  "resolution_notes": "Reassigned to Judge J004 with available slot at 14:00."
+}
+
+### ── STATS: System performance metrics ──────────────────────────────────────
+GET {{baseUrl}}/api/stats
+Authorization: Bearer {{token}}
