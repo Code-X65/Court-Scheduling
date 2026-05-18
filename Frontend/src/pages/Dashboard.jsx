@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePreferences } from '../context/PreferencesContext.jsx'
@@ -43,6 +44,7 @@ export default function Dashboard() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Dashboard" description="Overview of court cases, judge assignments, and scheduling metrics." />
       <div className="page-header">
         <div>
           <h1>Dashboard</h1>

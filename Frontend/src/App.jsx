@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { useState, useEffect } from 'react'
+import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { PreferencesProvider } from './context/PreferencesContext.jsx'
 import { useToastController, ToastContainer } from './components/Toast.jsx'
@@ -37,6 +38,7 @@ function RequireAuth({ children }) {
 
 function AppShell() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
   const location = useLocation()
   const isLogin = location.pathname === '/login'
   const { toasts } = useToastController()
@@ -46,14 +48,24 @@ function AppShell() {
     localStorage.setItem('theme', theme)
   }, [theme])
 
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light')
+  const toggleSidebar = () => setSidebarOpen(prev => !prev)
 
   return (
     <div className="layout-shell">
       <ToastContainer toasts={toasts} />
-      {!isLogin && <Sidebar theme={theme} />}
-      <div className="main-content">
-        {!isLogin && <Navbar theme={theme} toggleTheme={toggleTheme} />}
+      {!isLogin && (
+        <>
+          <div className={`sidebar-overlay ${sidebarOpen ? 'open' : ''}`} onClick={() => setSidebarOpen(false)} />
+          <Sidebar theme={theme} isOpen={sidebarOpen} />
+        </>
+      )}
+      <main id="main-content" className="main-content">
+        {!isLogin && <Navbar theme={theme} toggleTheme={toggleTheme} toggleSidebar={toggleSidebar} />}
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/login" element={<Login />} />
@@ -72,19 +84,21 @@ function AppShell() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Suspense>
-      </div>
+      </main>
     </div>
   )
 }
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <PreferencesProvider>
-          <AppShell />
-        </PreferencesProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <HelmetProvider>
+      <BrowserRouter>
+        <AuthProvider>
+          <PreferencesProvider>
+            <AppShell />
+          </PreferencesProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </HelmetProvider>
   )
 }

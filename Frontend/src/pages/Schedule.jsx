@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useEffect } from 'react'
 import client from '../api/client.js'
 import ScheduleGrid from '../components/ScheduleGrid.jsx'
@@ -124,6 +125,7 @@ export default function Schedule() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Schedule" description="Court hearing schedule and time-slot management." />
       <div className="page-header">
         <div>
           <h1>Schedule</h1>

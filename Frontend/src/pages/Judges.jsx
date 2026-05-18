@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import { useJudges } from '../hooks/useJudges.js'
 import Modal from '../components/Modal.jsx'
@@ -121,6 +122,7 @@ export default function Judges() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Judges" description="Browse and assign court judges." />
       <div className="page-header">
         <div>
           <h1>Judges</h1>

@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import client from '../api/client.js'
 import { toast } from '../components/Toast.jsx'
@@ -46,6 +47,7 @@ export default function Settings() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Settings" description="Application configuration and preferences." />
       <div className="page-header">
         <div>
           <h1>System Administration</h1>

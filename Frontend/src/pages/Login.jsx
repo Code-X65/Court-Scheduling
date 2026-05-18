@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useEffect } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
@@ -60,10 +61,12 @@ export default function Login() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--off-white)', padding: '2rem',
-    }}>
+    <>
+      <PageSEO title="Sign In" description="Secure sign-in portal for Court Scheduling System." />
+      <div style={{
+        minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        background: 'var(--off-white)', padding: '2rem',
+      }}>
       <div style={{ width: '100%', maxWidth: '420px' }}>
         {/* Seal */}
         <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
@@ -137,6 +140,7 @@ export default function Login() {
            </div>
          )}
        </div>
-     </div>
-   )
+      </div>
+    </>
+  )
 }

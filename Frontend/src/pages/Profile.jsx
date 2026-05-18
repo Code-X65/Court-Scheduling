@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { toast } from '../components/Toast.jsx'
@@ -65,6 +66,7 @@ export default function Profile() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Profile" description="User profile settings for Court Scheduling System." />
       <div className="page-header">
         <div>
           <h1>Profile Settings</h1>

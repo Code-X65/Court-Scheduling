@@ -19,7 +19,7 @@ const ADMIN_LINKS = [
   { to: '/users',      label: 'Users',       icon: '👥' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ isOpen }) {
   const { user } = useAuth()
   const role = user?.role || 'admin'
 
@@ -31,7 +31,7 @@ export default function Sidebar() {
   })
 
   return (
-    <aside className="sidebar no-print">
+    <aside className={`sidebar no-print ${isOpen ? 'open' : ''}`}>
       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--sidebar-border)' }}>
         <div style={{ fontFamily: "'Libre Baskerville', serif", fontWeight: 700, color: 'var(--text-primary)', fontSize: '1.1rem' }}>
           CourtBridge

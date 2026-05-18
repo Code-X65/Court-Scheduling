@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import client from '../api/client.js'
 import { toast } from '../components/Toast.jsx'
@@ -58,6 +59,7 @@ export default function AIInsights() {
 
   return (
     <div className="page-content">
+      <PageSEO title="AI Insights" description="AI-driven analytics and recommendations for court scheduling." />
       <div className="page-header">
         <div>
           <h1>AI Insights</h1>

@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useMemo } from 'react'
 import { useQuery } from '../hooks/useQuery.js'
 import { Badge } from '../components/StatusBadge.jsx'
@@ -116,6 +117,7 @@ export default function GapAnalysis() {
 
   return (
     <div className="page-content" style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+      <PageSEO title="Gap Analysis" description="Identify unassigned court time slots." />
       {/* Header */}
       <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>

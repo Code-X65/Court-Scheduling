@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useRef, useCallback, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import client from '../api/client.js'
@@ -164,6 +165,7 @@ export default function Cases() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Cases" description="View and manage all court cases." />
       <div className="page-header">
         <div>
           <h1>Cases</h1>

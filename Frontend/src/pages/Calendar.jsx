@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import client from '../api/client.js'
 import { toast } from '../components/Toast.jsx'
@@ -62,6 +63,7 @@ export default function Calendar() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Calendar" description="Interactive court calendar view." />
       <div className="page-header">
         <div>
           <h1>Calendar</h1>

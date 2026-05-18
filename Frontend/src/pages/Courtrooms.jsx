@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import { useCourtrooms } from '../hooks/useCourtrooms.js'
 import Modal from '../components/Modal.jsx'
@@ -108,6 +109,7 @@ export default function Courtrooms() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Courtrooms" description="Manage courtrooms and their availability." />
       <div className="page-header">
         <div>
           <h1>Courtrooms</h1>

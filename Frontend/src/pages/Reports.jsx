@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import client from '../api/client.js'
 import { toast } from '../components/Toast.jsx'
@@ -78,6 +79,7 @@ export default function Reports() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Reports" description="Analytics reports and performance dashboards." />
       <div className="page-header">
         <div>
           <h1>Reporting & Analytics</h1>

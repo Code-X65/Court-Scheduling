@@ -1,3 +1,4 @@
+import PageSEO from '../seo/PageSEO.jsx'
 import { useState } from 'react'
 import client from '../api/client.js'
 import { toast } from '../components/Toast.jsx'
@@ -52,6 +53,7 @@ export default function Users() {
 
   return (
     <div className="page-content">
+      <PageSEO title="Users" description="Manage court system users and roles." />
       <div className="page-header">
         <div>
           <h1>User Management</h1>
