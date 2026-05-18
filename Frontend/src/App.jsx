@@ -26,6 +26,7 @@ const Users = lazy(() => import('./pages/Users.jsx'))
 const Calendar = lazy(() => import('./pages/Calendar.jsx'))
 const Reports = lazy(() => import('./pages/Reports.jsx'))
 const Settings = lazy(() => import('./pages/Settings.jsx'))
+const GapAnalysis = lazy(() => import('./pages/GapAnalysis.jsx'))
 
 function RequireAuth({ children }) {
   const { isAuthenticated } = useAuth()
@@ -64,6 +65,7 @@ function AppShell() {
             <Route path="/ai-insights" element={<RequireAuth><AIInsights /></RequireAuth>} />
             <Route path="/calendar"    element={<RequireAuth><Calendar /></RequireAuth>} />
             <Route path="/reports"     element={<RequireAuth><Reports /></RequireAuth>} />
+            <Route path="/gap-analysis" element={<RequireAuth><GapAnalysis /></RequireAuth>} />
             <Route path="/settings"    element={<RequireAuth><Settings /></RequireAuth>} />
             <Route path="/profile"     element={<RequireAuth><Profile /></RequireAuth>} />
             <Route path="/users"       element={<RequireAuth><Users /></RequireAuth>} />

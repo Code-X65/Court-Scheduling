@@ -41,6 +41,7 @@ export const API = {
 
   // Analytics / Reports
   ANALYTICS_REPORTS:      '/analytics/reports',
+  GAP_ANALYSIS:           '/analytics/gap-analysis',
   ANALYTICS_EMAIL_STAKEHOLDERS: '/analytics/email-stakeholders',
   SETTINGS_HOLIDAYS:      '/settings/holidays',
   SETTINGS_GENERAL:       '/settings/general',

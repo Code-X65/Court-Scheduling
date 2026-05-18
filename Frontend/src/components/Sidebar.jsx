@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 
@@ -9,6 +10,7 @@ const NAV_LINKS = [
   { to: '/schedule',   label: 'Schedule',    icon: '📅' },
   { to: '/calendar',   label: 'Calendar',    icon: '🗓' },
   { to: '/reports',    label: 'Reports',     icon: '📈' },
+  { to: '/gap-analysis', label: 'Gap Analysis', icon: '📊' },
 ]
 
 const ADMIN_LINKS = [
@@ -23,8 +25,8 @@ export default function Sidebar() {
 
   const filterLinks = (links) => links.filter(link => {
     if (role === 'admin') return true
-    if (role === 'clerk') return ['/dashboard', '/cases', '/schedule', '/calendar', '/reports'].includes(link.to)
-    if (role === 'judge') return ['/dashboard', '/cases', '/calendar'].includes(link.to)
+    if (role === 'clerk') return ['/dashboard', '/cases', '/schedule', '/calendar', '/reports', '/gap-analysis'].includes(link.to)
+    if (role === 'judge') return ['/dashboard', '/cases', '/calendar', '/gap-analysis'].includes(link.to)
     return false
   })
 

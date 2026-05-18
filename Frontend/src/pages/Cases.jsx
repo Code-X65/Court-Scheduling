@@ -41,6 +41,8 @@ export default function Cases() {
   const [filterPriorities, setFilterPriorities] = useState([])
   const [dateRange, setDateRange]       = useState({ start: '', end: '' })
   const [selectedIds, setSelectedIds] = useState([])
+  const toggleSelect = (id) => setSelectedIds(s => s.includes(id) ? s.filter(x => x !== id) : [...s, id])
+  const toggleSelectAll = () => setSelectedIds(selectedIds.length === filtered.length ? [] : filtered.map(c => c.id))
   const [limit, setLimit]             = useState(20)
   const [prediction, setPrediction]     = useState(null)
   const [predLoading, setPredLoading]   = useState(false)

@@ -133,4 +133,154 @@ router.post('/maintenance/backup', (req, res) => {
   res.json({ success: true, message: 'Backup initiated successfully.' })
 })
 
+// GET /analytics/gap-analysis
+router.get('/analytics/gap-analysis', (req, res) => {
+  try {
+    const db = getDb()
+
+    // 1. Judge gaps
+    const judgesRows = db.prepare(`
+      SELECT j.id AS judge_id, j.name, j.max_hearings_per_day,
+             COALESCE(COUNT(c.id), 0) AS current_load
+      FROM judges j
+      LEFT JOIN cases c ON c.assigned_judge_id = j.id AND c.status IN ('pending', 'scheduled')
+      GROUP BY j.id
+    `).all()
+
+    const judge_gaps = judgesRows.map(row => {
+      const capacity = Math.max(10, (row.max_hearings_per_day || 3) * 5)
+      const gap_percentage = Math.min(120, Math.round((row.current_load * 100) / capacity * 10) / 10)
+      let status = 'optimal'
+      if (gap_percentage < 50) status = 'underutilized'
+      else if (gap_percentage > 90) status = 'overloaded'
+
+      return {
+        judge_id: row.judge_id,
+        name: row.name,
+        current_load: row.current_load,
+        capacity,
+        gap_percentage,
+        status
+      }
+    })
+
+    // 2. Courtroom gaps
+    const courtroomsRows = db.prepare(`
+      SELECT cr.id AS courtroom_id, cr.name,
+             COALESCE(COUNT(h.id), 0) AS booked_slots
+      FROM courtrooms cr
+      LEFT JOIN hearings h ON h.courtroom_id = cr.id AND h.scheduled_date >= date('now', '-30 days')
+      GROUP BY cr.id
+    `).all()
+
+    const courtroom_gaps = courtroom_gaps_map(courtroomsRows)
+
+    // 3. Case type gaps
+    const caseTypeRows = db.prepare(`
+      SELECT c.case_type,
+             COUNT(DISTINCT c.assigned_judge_id) AS available_judges,
+             COUNT(c.id) AS total_cases
+      FROM cases c
+      WHERE c.status IN ('pending', 'scheduled') AND c.assigned_judge_id IS NOT NULL AND c.assigned_judge_id != 0
+      GROUP BY c.case_type
+    `).all()
+
+    const defaultTypes = ['criminal', 'civil', 'family', 'commercial', 'land', 'constitutional']
+    const case_type_gaps = defaultTypes.map(type => {
+      const found = caseTypeRows.find(r => r.case_type === type)
+      const total_cases = found ? found.total_cases : 0
+      const available_judges = found ? Math.max(1, found.available_judges) : 1
+      const recommended_judges = Math.max(1, Math.ceil(total_cases / 8))
+      const gap = Math.max(0, recommended_judges - available_judges)
+
+      return {
+        case_type: type,
+        total_cases,
+        available_judges,
+        recommended_judges,
+        gap
+      }
+    })
+
+    // 4. Time slot gaps
+    const slotBookings = db.prepare(`
+      SELECT 
+        CASE CAST(strftime('%w', scheduled_date) AS INTEGER)
+          WHEN 1 THEN 'Monday'
+          WHEN 2 THEN 'Tuesday'
+          WHEN 3 THEN 'Wednesday'
+          WHEN 4 THEN 'Thursday'
+          WHEN 5 THEN 'Friday'
+          ELSE 'Monday'
+        END AS day,
+        start_time,
+        COUNT(*) AS booked
+      FROM hearings
+      WHERE scheduled_date >= date('now', '-30 days')
+      GROUP BY day, start_time
+    `).all()
+
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+    const timeSlots = ['09:00', '11:00', '14:00', '16:00']
+    const time_slot_gaps = []
+
+    days.forEach(day => {
+      timeSlots.forEach(slot => {
+        const found = slotBookings.find(b => b.day === day && b.start_time === slot)
+        const booked = found ? found.booked : 0
+        const available = 5 
+        const utilization = Math.min(100, Math.round((booked * 100) / available))
+
+        time_slot_gaps.push({
+          day,
+          start_time: slot,
+          end_time: slot === '09:00' ? '11:00' : slot === '11:00' ? '13:00' : slot === '14:00' ? '16:00' : '18:00',
+          available,
+          booked,
+          utilization
+        })
+      })
+    })
+
+    res.json({
+      success: true,
+      data: {
+        judge_gaps,
+        courtroom_gaps,
+        case_type_gaps,
+        time_slot_gaps
+      }
+    })
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message })
+  }
+})
+
+function courtroom_gaps_map(rows) {
+  return rows.map(row => {
+    const total_slots = 20 * 8 
+    const utilization_rate = Math.min(100, Math.round((row.booked_slots * 100) / total_slots * 10) / 10)
+    
+    let gaps = []
+    if (utilization_rate < 30) {
+      gaps = ["Monday mornings", "Wednesday afternoons", "Friday all day"]
+    } else if (utilization_rate < 60) {
+      gaps = ["Tuesday afternoons", "Thursday mornings"]
+    } else if (utilization_rate < 85) {
+      gaps = ["Friday afternoons"]
+    } else {
+      gaps = ["None (High Occupancy)"]
+    }
+
+    return {
+      courtroom_id: row.courtroom_id,
+      name: row.name,
+      utilization_rate,
+      booked_slots: row.booked_slots,
+      total_slots,
+      gaps
+    }
+  })
+}
+
 export default router
