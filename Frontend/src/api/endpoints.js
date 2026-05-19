@@ -4,7 +4,7 @@
  */
 export const API = {
   // Auth
-  LOGIN:     '/login',
+  LOGIN:     '/auth/login',
 
   // Dashboard
   DASHBOARD_STATS: '/dashboard/stats',

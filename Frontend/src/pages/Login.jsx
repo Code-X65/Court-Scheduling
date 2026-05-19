@@ -43,7 +43,7 @@ export default function Login() {
         sessionStorage.setItem('role', role)
       } else {
         // --- Real API path ---
-        const r = await client.post('/login', { username, password })
+        const r = await client.post('/auth/login', { username, password })
         const { user, authBase64 } = r.data.data
         // client.js redirect interceptor reads sessionStorage['auth'] on every request
         sessionStorage.setItem('auth', authBase64)

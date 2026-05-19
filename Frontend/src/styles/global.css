@@ -665,3 +665,54 @@ h3 { font-size: 1.1rem; }
     font-size: 0.75rem;
   }
 }
+
+/* Primary button - always white text regardless of theme */
+.btn-primary {
+  color: #ffffff !important;
+  background-color: var(--navy, #0B1F3A) !important;
+}
+
+.btn-primary:hover {
+  color: #ffffff !important;
+  opacity: 0.9;
+}
+
+/* Secondary / outline button - always readable in both themes */
+.btn-secondary {
+  color: var(--navy, #0B1F3A) !important;
+  border: 1px solid var(--navy, #0B1F3A);
+  background-color: transparent;
+}
+
+/* Dark mode overrides */
+[data-theme="dark"] .btn-primary,
+.dark .btn-primary {
+  color: #ffffff !important;
+  background-color: var(--amber, #C8922A) !important;
+}
+
+[data-theme="dark"] .btn-secondary,
+.dark .btn-secondary {
+  color: #ffffff !important;
+  border-color: #ffffff;
+}
+
+/* Sign Out button specifically */
+[data-theme="dark"] button:has(> span),
+[data-theme="dark"] .navbar-actions button,
+[data-theme="dark"] header button {
+  color: #ffffff !important;
+}
+
+/* Force all nav/header buttons to be visible */
+.navbar button,
+header button,
+nav button {
+  color: inherit;
+}
+
+[data-theme="dark"] .navbar button,
+[data-theme="dark"] header button,
+[data-theme="dark"] nav button {
+  color: #ffffff !important;
+}

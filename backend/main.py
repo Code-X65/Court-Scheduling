@@ -12,6 +12,9 @@ from api.judges     import router as judges_router
 from api.courtrooms import router as courtrooms_router
 from api.cases      import router as cases_router
 from api.timetable  import router as timetable_router
+from api.hearings   import router as hearings_router
+from api.analytics  import router as analytics_router
+from api.dashboard  import router as dashboard_router
 
 app = FastAPI(
     title       = settings.APP_NAME,
@@ -25,6 +28,7 @@ app = FastAPI(
     version     = settings.APP_VERSION,
     docs_url    = "/docs",
     redoc_url   = "/redoc",
+    redirect_slashes = False,
 )
 
 app.add_middleware(
@@ -41,7 +45,9 @@ app.include_router(judges_router)
 app.include_router(courtrooms_router)
 app.include_router(cases_router)
 app.include_router(timetable_router)
-
+app.include_router(hearings_router)
+app.include_router(analytics_router)
+app.include_router(dashboard_router)
 
 @app.on_event("startup")
 def startup():

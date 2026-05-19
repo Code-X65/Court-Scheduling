@@ -61,11 +61,32 @@ def register_case(payload: CaseCreate, db: Session = Depends(get_db),
     return case
 
 
-@router.get("/", response_model=List[CaseResponse], summary="List all cases")
+@router.get("", response_model=None, summary="List all cases")
+@router.get("/", response_model=None, summary="List all cases", include_in_schema=False)
 def list_cases(status: Optional[str] = None,
                db: Session = Depends(get_db),
                current_user=Depends(get_current_user)):
-    return get_all_cases(db, status=status)
+    cases = get_all_cases(db, status=status)
+    result = []
+    for c in cases:
+        judge = get_judge_by_id(db, c.judge_id) if c.judge_id else None
+        result.append({
+            "id":           c.id,
+            "case_number":  c.case_number,
+            "title":        c.description or c.case_number,
+            "case_type":    c.case_type,
+            "num_parties":  c.num_parties,
+            "priority":     c.priority.lower() if c.priority else "normal",
+            "status":       c.status,
+            "description":  c.description,
+            "judge_id":     c.judge_id,
+            "assigned_judge_id": c.judge_id,
+            "judge_name":   judge.name if judge else None,
+            "courtroom_id": c.courtroom_id,
+            "created_at":   c.created_at.isoformat(),
+            "notes":        c.description or "",
+        })
+    return result
 
 
 @router.get("/{case_id}", response_model=CaseResponse, summary="Get a case by ID")

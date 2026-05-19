@@ -1,6 +1,6 @@
 
 
-from fastapi            import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Request
 from fastapi.security   import OAuth2PasswordRequestForm
 from sqlalchemy.orm     import Session
 
@@ -14,28 +14,49 @@ from schemas.schemas    import LoginRequest, TokenResponse, UserCreate, UserResp
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 
-@router.post("/login", response_model=TokenResponse, summary="Admin login")
-def login(form: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(get_db)):
+@router.post("/login", summary="Admin login")
+async def login(request: Request, db: Session = Depends(get_db)):
     """
-    Login with username and password.
-    Returns a JWT bearer token to include in all subsequent requests.
+    Accepts both JSON { username, password } from the frontend
+    and form data from the Swagger docs.
     """
-    user = get_user_by_username(db, form.username)
-    if not user or not verify_password(form.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password.",
-        )
+    content_type = request.headers.get("content-type", "")
+
+    if "application/json" in content_type:
+        # Frontend sends JSON
+        body     = await request.json()
+        username = body.get("username")
+        password = body.get("password")
+    else:
+        # Swagger docs send form data
+        form     = await request.form()
+        username = form.get("username")
+        password = form.get("password")
+
+    if not username or not password:
+        raise HTTPException(status_code=422, detail="Username and password are required.")
+
+    user = get_user_by_username(db, username)
+    if not user or not verify_password(password, user.hashed_password):
+        raise HTTPException(status_code=401, detail="Incorrect username or password.")
     if not user.is_active:
         raise HTTPException(status_code=403, detail="Account is inactive.")
 
-    token = create_access_token(data={"sub": user.username})
-    return TokenResponse(
-        access_token = token,
-        token_type   = "bearer",
-        user_role    = user.role,
-        full_name    = user.full_name,
-    )
+    import base64
+    token    = create_access_token(data={"sub": user.username})
+    auth_b64 = base64.b64encode(f"{user.username}:{token}".encode()).decode()
+
+    return {
+        "data": {
+            "user": {
+                "username":  user.username,
+                "full_name": user.full_name,
+                "role":      user.role,
+            },
+            "authBase64": auth_b64,
+            "token":      token,
+        }
+    }
 
 
 @router.post("/register", response_model=UserResponse,

@@ -3,13 +3,14 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { usePreferences } from '../context/PreferencesContext.jsx'
 import { useQuery } from '../hooks/useQuery.js'
+import { Scale, Clock, CalendarCheck, ListOrdered, BarChart2 } from 'lucide-react'
 
 const STAT_CONFIG = [
-  { key: 'total_cases',        label: 'Total Cases',        icon: '⚖', link: '/cases',            color: 'var(--navy)', size: 'small' },
-  { key: 'pending_cases',      label: 'Pending Cases',      icon: '⏳', link: '/cases?status=pending', color: 'var(--commercial)', size: 'small' },
-  { key: 'scheduled_this_week',label: 'Scheduled This Week',icon: '📅', link: '/schedule',         color: 'var(--civil)', size: 'small' },
-  { key: 'upcoming_hearings',  label: 'Upcoming Hearings',  type: 'list',  color: 'var(--family)', size: 'large' },
-  { key: 'workload_chart',     label: 'Judge Workload',     type: 'chart', color: 'var(--constitutional)', size: 'large' },
+  { key: 'total_cases',         label: 'Total Cases',         Icon: Scale,         link: '/cases',               color: 'var(--navy)',           size: 'small' },
+  { key: 'pending_cases',       label: 'Pending Cases',       Icon: Clock,         link: '/cases?status=pending', color: 'var(--commercial)',     size: 'small' },
+  { key: 'scheduled_this_week', label: 'Scheduled This Week', Icon: CalendarCheck, link: '/schedule',            color: 'var(--civil)',          size: 'small' },
+  { key: 'upcoming_hearings',   label: 'Upcoming Hearings',   Icon: ListOrdered,   type: 'list',                 color: 'var(--family)',         size: 'large' },
+  { key: 'workload_chart',      label: 'Judge Workload',      Icon: BarChart2,     type: 'chart',                color: 'var(--constitutional)', size: 'large' },
 ]
 
 export default function Dashboard() {
@@ -99,7 +100,9 @@ export default function Dashboard() {
               )}
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ fontSize: '1.4rem' }}>{config.icon || '📈'}</div>
+                <div style={{ color: config.color }}>
+                  {config.Icon && <config.Icon size={22} strokeWidth={1.8} />}
+                </div>
                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {config.label}
                 </div>
@@ -114,14 +117,22 @@ export default function Dashboard() {
                   ))}
                 </div>
               ) : config.type === 'list' ? (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  {[1, 2, 3].map(x => (
-                    <div key={x} style={{ fontSize: '0.8rem', padding: '0.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
-                      <span style={{ fontWeight: 500 }}>FHC/ABJ/CR/0{x}2/24</span>
-                      <span style={{ color: 'var(--text-muted)' }}>10:00 AM</span>
-                    </div>
-                  ))}
-                </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {stats?.upcoming_hearings?.length > 0 ? (
+              stats.upcoming_hearings.map((h, x) => (
+                <div key={x} style={{ fontSize: '0.8rem', padding: '0.5rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between' }}>
+                 <span style={{ fontWeight: 500 }}>{h.case_number || h.case_id}</span>
+                  <span style={{ color: 'var(--text-muted)' }}>
+                  {h.start_time ? new Date(h.start_time).toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }) : '—'}
+                </span>
+            </div>
+            ))
+            ) : (
+              <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '0.5rem 0' }}>
+                No upcoming hearings scheduled.
+              </div>
+              )}
+            </div>
               ) : (
                 <>
                   <div style={{ fontSize: '2rem', fontFamily: "'Libre Baskerville', serif", fontWeight: 700, color: config.color, lineHeight: 1 }}>

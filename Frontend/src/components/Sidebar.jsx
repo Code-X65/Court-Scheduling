@@ -1,22 +1,26 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import {
+  LayoutDashboard, Scale, User, Building2, CalendarDays,
+  Calendar, BarChart2, TrendingUp, Settings, Brain, Users
+} from 'lucide-react'
 
 const NAV_LINKS = [
-  { to: '/dashboard',  label: 'Dashboard',   icon: '📊' },
-  { to: '/cases',      label: 'Cases',       icon: '⚖️' },
-  { to: '/judges',     label: 'Judges',      icon: '👨‍⚖️' },
-  { to: '/courtrooms', label: 'Courtrooms',  icon: '🏛' },
-  { to: '/schedule',   label: 'Schedule',    icon: '📅' },
-  { to: '/calendar',   label: 'Calendar',    icon: '🗓' },
-  { to: '/reports',    label: 'Reports',     icon: '📈' },
-  { to: '/gap-analysis', label: 'Gap Analysis', icon: '📊' },
+  { to: '/dashboard',    label: 'Dashboard',     icon: LayoutDashboard },
+  { to: '/cases',        label: 'Cases',         icon: Scale },
+  { to: '/judges',       label: 'Judges',        icon: User },
+  { to: '/courtrooms',   label: 'Courtrooms',    icon: Building2 },
+  { to: '/schedule',     label: 'Schedule',      icon: CalendarDays },
+  { to: '/calendar',     label: 'Calendar',      icon: Calendar },
+  { to: '/reports',      label: 'Reports',       icon: BarChart2 },
+  { to: '/gap-analysis', label: 'Gap Analysis',  icon: TrendingUp },
 ]
 
 const ADMIN_LINKS = [
-  { to: '/settings',   label: 'Settings',    icon: '⚙️' },
-  { to: '/ai-insights',label: 'AI Insights', icon: '🧠' },
-  { to: '/users',      label: 'Users',       icon: '👥' },
+  { to: '/settings',    label: 'Settings',    icon: Settings },
+  { to: '/ai-insights', label: 'AI Insights', icon: Brain },
+  { to: '/users',       label: 'Users',       icon: Users },
 ]
 
 export default function Sidebar({ isOpen }) {
@@ -24,9 +28,9 @@ export default function Sidebar({ isOpen }) {
   const role = user?.role || 'admin'
 
   const filterLinks = (links) => links.filter(link => {
-    if (role === 'admin') return true
-    if (role === 'clerk') return ['/dashboard', '/cases', '/schedule', '/calendar', '/reports', '/gap-analysis'].includes(link.to)
-    if (role === 'judge') return ['/dashboard', '/cases', '/calendar', '/gap-analysis'].includes(link.to)
+    if (role === 'admin' || role === 'superadmin') return true
+    if (role === 'clerk') return ['/dashboard','/cases','/schedule','/calendar','/reports','/gap-analysis'].includes(link.to)
+    if (role === 'judge') return ['/dashboard','/cases','/calendar','/gap-analysis'].includes(link.to)
     return false
   })
 
@@ -43,7 +47,9 @@ export default function Sidebar({ isOpen }) {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: '1rem 0' }}>
         <div className="sidebar-section">
-          <div style={{ padding: '0 1.5rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Main Navigation</div>
+          <div style={{ padding: '0 1.5rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            Main Navigation
+          </div>
           <nav className="sidebar-nav" role="navigation" aria-label="Main Navigation">
             {filterLinks(NAV_LINKS).map(link => (
               <SidebarLink key={link.to} {...link} />
@@ -51,9 +57,11 @@ export default function Sidebar({ isOpen }) {
           </nav>
         </div>
 
-        {role === 'admin' && (
+        {(role === 'admin' || role === 'superadmin') && (
           <div className="sidebar-section" style={{ marginTop: '1.5rem' }}>
-            <div style={{ padding: '0 1.5rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Administration</div>
+            <div style={{ padding: '0 1.5rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+              Administration
+            </div>
             <nav className="sidebar-nav" role="navigation" aria-label="Administration">
               {ADMIN_LINKS.map(link => (
                 <SidebarLink key={link.to} {...link} />
@@ -70,11 +78,11 @@ export default function Sidebar({ isOpen }) {
   )
 }
 
-function SidebarLink({ to, label, icon }) {
+function SidebarLink({ to, label, icon: Icon }) {
   const [hover, setHover] = useState(false)
-  
+
   return (
-    <NavLink 
+    <NavLink
       to={to}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
@@ -87,7 +95,7 @@ function SidebarLink({ to, label, icon }) {
         textDecoration: 'none', transition: 'all 160ms'
       })}
     >
-      <span style={{ fontSize: '1.1rem' }}>{icon}</span>
+      <Icon size={17} strokeWidth={1.8} />
       {label}
     </NavLink>
   )
