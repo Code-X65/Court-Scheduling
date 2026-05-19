@@ -38,7 +38,7 @@ function RequireAuth({ children }) {
 
 function AppShell() {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light')
-  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [sidebarOpen, setSidebarOpen] = useState(true)
   const location = useLocation()
   const isLogin = location.pathname === '/login'
   const { toasts } = useToastController()
@@ -49,8 +49,11 @@ function AppShell() {
   }, [theme])
 
   useEffect(() => {
+  // Only auto-close on mobile (screen width < 768px)
+  if (window.innerWidth < 768) {
     setSidebarOpen(false)
-  }, [location.pathname])
+  }
+}, [location.pathname])
 
   const toggleTheme = () => setTheme(prev => prev === 'light' ? 'dark' : 'light')
   const toggleSidebar = () => setSidebarOpen(prev => !prev)
