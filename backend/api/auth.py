@@ -16,22 +16,17 @@ router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
 @router.post("/login", summary="Admin login")
 async def login(request: Request, db: Session = Depends(get_db)):
-    """
-    Accepts both JSON { username, password } from the frontend
-    and form data from the Swagger docs.
-    """
-    content_type = request.headers.get("content-type", "")
-
-    if "application/json" in content_type:
-        # Frontend sends JSON
+    try:
         body     = await request.json()
-        username = body.get("username")
-        password = body.get("password")
-    else:
-        # Swagger docs send form data
+        username = body.get("username", "").strip()
+        password = body.get("password", "").strip()
+    except Exception:
+        # fallback to form data
         form     = await request.form()
-        username = form.get("username")
-        password = form.get("password")
+        username = str(form.get("username", "")).strip()
+        password = str(form.get("password", "")).strip()
+
+    print(f"[LOGIN DEBUG] username='{username}' password_len={len(password)}")
 
     if not username or not password:
         raise HTTPException(status_code=422, detail="Username and password are required.")
@@ -57,7 +52,6 @@ async def login(request: Request, db: Session = Depends(get_db)):
             "token":      token,
         }
     }
-
 
 @router.post("/register", response_model=UserResponse,
              summary="Register a new admin user (superadmin only)")

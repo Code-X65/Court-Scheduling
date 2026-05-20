@@ -1,45 +1,47 @@
 import { createContext, useContext, useState, useEffect } from 'react'
 
 const AuthContext = createContext(null)
-
-// 24 hour session TTL
-const SESSION_TTL = 24 * 60 * 60 * 1000 
+const SESSION_TTL = 24 * 60 * 60 * 1000
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null)
-  const [initializing, setInitializing] = useState(true)
+  const [user, setUser]             = useState(null)
+  const [initializing, setInit]     = useState(true)
 
   useEffect(() => {
     const authData = localStorage.getItem('auth_session')
-    if (authData) {
+    const token    = localStorage.getItem('access_token')
+    if (authData && token) {
       try {
         const { user, timestamp } = JSON.parse(authData)
         if (Date.now() - timestamp < SESSION_TTL) {
           setUser(user)
         } else {
           localStorage.removeItem('auth_session')
+          localStorage.removeItem('access_token')
         }
       } catch (e) {
         localStorage.removeItem('auth_session')
+        localStorage.removeItem('access_token')
       }
     }
-    setInitializing(false)
+    setInit(false)
   }, [])
 
   const login = (userData) => {
-    const session = {
-      user: userData,
-      timestamp: Date.now()
-    }
+    const session = { user: userData, timestamp: Date.now() }
     localStorage.setItem('auth_session', JSON.stringify(session))
-    setUser(userData)
-    // sessionStorage used by Profile.jsx and the api client interceptor
+    if (userData.token) {
+      localStorage.setItem('access_token', userData.token)
+    }
     sessionStorage.setItem('username', userData.username)
-    sessionStorage.setItem('role', userData.role)
+    sessionStorage.setItem('role',     userData.role)
+    setUser(userData)
   }
 
   const logout = () => {
     localStorage.removeItem('auth_session')
+    localStorage.removeItem('access_token')
+    sessionStorage.clear()
     setUser(null)
   }
 

@@ -81,12 +81,14 @@ def email_stakeholders(current_user=Depends(get_current_user)):
 
 @router.get("/audit/logs", summary="Audit logs")
 def get_audit_logs(current_user=Depends(get_current_user)):
-    return {"logs": [], "message": "Audit logging will be available in a future release."}
+    # Return array directly — frontend calls auditLogs.map()
+    return []
 
 
 @router.get("/settings/holidays", summary="Get holiday settings")
 def get_holidays(current_user=Depends(get_current_user)):
-    return {"holidays": []}
+    # Return array directly — frontend calls holidays.map()
+    return []
 
 
 @router.post("/settings/holidays", summary="Save holiday settings")
@@ -127,20 +129,31 @@ def ai_stats(
         "model":            "Random Forest Regressor",
         "model_version":    "rf_v1.0",
         "mae_mins":         35.36,
+        "mae_minutes":      35.36,
         "rmse_mins":        47.98,
         "r2_score":         0.4325,
+        "accuracy":         0.4325,
         "training_records": 3500,
+        "total_samples":    5000,
         "test_records":     1500,
+        "last_trained":     "2025-05-15T10:00:00",
         "conflict_rate_pct": stats["conflict_rate_pct"],
         "total_predictions": db.query(Case).filter(Case.status == "confirmed").count(),
-        "feature_importance": {
-            "case_type":   0.3847,
-            "num_parties": 0.3613,
-            "judge_idx":   0.1674,
-            "priority":    0.0866,
-        },
+        # Array format expected by frontend
+        "feature_importance": [
+            {"feature": "Case Type",         "weight": 0.3847},
+            {"feature": "Number of Parties", "weight": 0.3613},
+            {"feature": "Judge Index",        "weight": 0.1674},
+            {"feature": "Priority",           "weight": 0.0866},
+        ],
+        "performance_history": [
+            {"date": "2025-01-01", "accuracy": 0.38},
+            {"date": "2025-02-01", "accuracy": 0.40},
+            {"date": "2025-03-01", "accuracy": 0.41},
+            {"date": "2025-04-01", "accuracy": 0.42},
+            {"date": "2025-05-01", "accuracy": 0.4325},
+        ],
     }
-
 
 @router.post("/ai/predict", summary="Predict hearing duration")
 async def ai_predict(

@@ -111,11 +111,30 @@ export default function Dashboard() {
               {loading ? (
                 <div className="skeleton" style={{ height: isLarge ? '120px' : '40px' }} />
               ) : config.type === 'chart' ? (
-                <div style={{ height: '140px', background: 'var(--bg-accent)', borderRadius: '4px', display: 'flex', alignItems: 'flex-end', gap: '1rem', padding: '1rem' }}>
-                  {[40, 70, 55, 90, 30].map((h, i) => (
-                    <div key={i} style={{ flex: 1, height: `${h}%`, background: config.color, borderRadius: '2px 2px 0 0', opacity: 0.8 }} />
-                  ))}
-                </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {stats?.workload_chart?.length > 0 ? (
+                  stats.workload_chart.map((item, i) => (
+                    <div key={i}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8rem', marginBottom: '0.25rem' }}>
+                        <span>{item.judge_name}</span>
+                        <span style={{ fontWeight: 600 }}>{item.hearings} hearings</span>
+                      </div>
+                      <div style={{ width: '100%', height: '6px', background: 'var(--bg-accent)', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{
+                          width: `${Math.min((item.hearings / (stats.workload_chart[0]?.hearings || 1)) * 100, 100)}%`,
+                          height: '100%',
+                          background: `hsl(${210 - i * 25}, 65%, 42%)`,
+                          borderRadius: '3px'
+                        }} />
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', padding: '1rem 0', textAlign: 'center' }}>
+                    No hearing data yet. Schedule cases to see workload.
+                  </div>
+                )}
+              </div>
               ) : config.type === 'list' ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {stats?.upcoming_hearings?.length > 0 ? (
