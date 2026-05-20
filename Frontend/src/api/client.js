@@ -7,16 +7,11 @@ const apiClient = axios.create({
   headers: { 'Content-Type': 'application/json' },
 })
 
-// Inject Basic Auth from sessionStorage on every request
+// Inject Bearer token on every request
 apiClient.interceptors.request.use((config) => {
-  const creds = sessionStorage.getItem('auth')
-  if (creds) {
-    config.headers.Authorization = `Basic ${creds}`
-  }
-  // Optional: let callers append custom headers per-request via options.headers
-  if (config.options?.headers) {
-    Object.assign(config.headers, config.options.headers)
-    delete config.options.headers
+  const token = localStorage.getItem('access_token')
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
   }
   return config
 })
@@ -26,20 +21,16 @@ apiClient.interceptors.response.use(
   (res) => res,
   (err) => {
     if (err.response?.status === 401) {
-      sessionStorage.removeItem('auth')
-      sessionStorage.removeItem('username')
-      sessionStorage.removeItem('role')
-      window.location.href = '/login?expired=1'
+      localStorage.removeItem('access_token')
+      localStorage.removeItem('auth_session')
+      if (!window.location.pathname.includes('/login')) {
+        window.location.href = '/login?expired=1'
+      }
     }
     return Promise.reject(err)
   }
 )
 
-/**
- * Unwrap a backend response envelope.
- * Backend returns: { success: true, data: ..., message: '...' }
- * or:               { success: false, error: { message, detail } }
- */
 export function unwrap(response) {
   return response.data
 }

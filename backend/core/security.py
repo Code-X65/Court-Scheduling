@@ -5,7 +5,7 @@ import base64
 warnings.filterwarnings("ignore", ".*error reading bcrypt version.*")
 
 from fastapi   import Depends, HTTPException, status
-from fastapi.security import OAuth2PasswordBearer, HTTPBasic, HTTPBasicCredentials
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import JWTError, jwt
@@ -14,7 +14,6 @@ from core.config import settings
 from db.database import SessionLocal, get_db
 
 pwd_context   = CryptContext(schemes=["bcrypt"], deprecated="auto")
-http_basic = HTTPBasic(auto_error=False)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login", auto_error=False)
 
 
@@ -48,29 +47,22 @@ def decode_token(token: str) -> dict:
 
 def get_current_user(
     bearer_token: str = Depends(oauth2_scheme),
-    basic_creds: HTTPBasicCredentials = Depends(http_basic),
 ):
-    # Import here to avoid circular import (crud imports security, security imports crud)
     from db.crud import get_user_by_username
     from db.database import SessionLocal
 
-    token = None
-    if bearer_token:
-        token = bearer_token
-    elif basic_creds:
-        try:
-            decoded = base64.b64decode(basic_creds.password).decode()
-            token   = decoded
-        except Exception:
-            token   = basic_creds.password
-
-    if not token:
+    if not bearer_token:
         raise HTTPException(status_code=401, detail="Not authenticated.")
 
-    payload  = decode_token(token)
-    username = payload.get("sub")
+    try:
+        payload  = decode_token(bearer_token)
+        username = payload.get("sub")
+        if not username:
+            raise HTTPException(status_code=401, detail="Invalid token.")
+    except Exception:
+        raise HTTPException(status_code=401, detail="Invalid or expired token.")
 
-    db   = SessionLocal()
+    db = SessionLocal()
     try:
         user = get_user_by_username(db, username)
     finally:

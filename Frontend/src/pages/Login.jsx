@@ -21,44 +21,56 @@ export default function Login() {
   const isDemo = import.meta.env.VITE_DEMO_MODE === 'true'
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!username || !password) { 
-      setError('Please enter both username and password.')
-      return 
-    }
-    
-    setLoading(true)
-    setError('')
-
-    try {
-      if (isDemo) {
-        // --- Demo / mock path ---
-        await new Promise(r => setTimeout(r, 800))
-        if (password.length < 4) throw new Error('Password too short.')
-        let role = 'admin'
-        if (username.toLowerCase().includes('judge')) role = 'judge'
-        else if (username.toLowerCase().includes('clerk')) role = 'clerk'
-        login({ username, role })
-        sessionStorage.setItem('username', username)
-        sessionStorage.setItem('role', role)
-      } else {
-        // --- Real API path ---
-        const r = await client.post('/auth/login', { username, password })
-        const { user, authBase64 } = r.data.data
-        // client.js redirect interceptor reads sessionStorage['auth'] on every request
-        sessionStorage.setItem('auth', authBase64)
-        sessionStorage.setItem('username', user.username)
-        sessionStorage.setItem('role', user.role)
-        login(user)
-      }
-      navigate('/dashboard')
-    } catch (err) {
-      const detail = err.response?.data?.error?.message || err.message
-      setError(detail === 'Password too short.' ? 'Password must be at least 4 characters.' : 'Invalid username or password.')
-    } finally {
-      setLoading(false)
-    }
+  e.preventDefault()
+  if (!username || !password) {
+    setError('Please enter both username and password.')
+    return
   }
+
+  setLoading(true)
+  setError('')
+
+  try {
+    if (isDemo) {
+      // --- Demo / mock path ---
+      await new Promise(r => setTimeout(r, 800))
+      if (password.length < 4) throw new Error('Password too short.')
+      let role = 'admin'
+      if (username.toLowerCase().includes('judge')) role = 'judge'
+      else if (username.toLowerCase().includes('clerk')) role = 'clerk'
+      login({ username, role })
+      sessionStorage.setItem('username', username)
+      sessionStorage.setItem('role', role)
+    } else {
+      // --- Real API path ---
+      const r       = await client.post('/auth/login', { username, password })
+      const payload = r.data?.data || r.data
+      const user    = payload?.user
+      const token   = payload?.token
+
+      if (!token) {
+        setError('Login failed: no token received.')
+        return
+      }
+
+      localStorage.setItem('access_token', token)
+      login({
+        username:  user.username,
+        full_name: user.full_name,
+        role:      user.role,
+        token,
+      })
+    }
+    navigate('/dashboard')
+  } catch (err) {
+    const detail = err.response?.data?.detail || err.response?.data?.error?.message || err.message
+    setError(detail === 'Password too short.'
+      ? 'Password must be at least 4 characters.'
+      : 'Invalid username or password.')
+  } finally {
+    setLoading(false)
+  }
+}
 
   return (
     <>
