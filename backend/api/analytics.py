@@ -1,5 +1,5 @@
 
-from fastapi        import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from datetime       import datetime, timedelta
 
@@ -309,13 +309,117 @@ def generate_schedule(current_user=Depends(get_current_user)):
             "status": "ok"}
 
 
-@router.get("/users", summary="List users (admin only)")
+def _fmt_user(u):
+    return {
+        "id":        u.id,
+        "username":  u.username,
+        "email":     u.email,
+        "full_name": u.full_name,
+        "role":      u.role,
+        "is_active": u.is_active,
+        "created_at": u.created_at.isoformat(),
+    }
+
+
+@router.get("/users", summary="List all users")
 def list_users_alias(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user),
 ):
     from db.crud import get_all_users
-    users = get_all_users(db)
-    return [{"id": u.id, "username": u.username, "email": u.email,
-             "full_name": u.full_name, "role": u.role,
-             "is_active": u.is_active} for u in users]
+    return [_fmt_user(u) for u in get_all_users(db)]
+
+
+@router.post("/users", summary="Create a new user", status_code=201)
+async def create_user_alias(
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    from db.crud import get_user_by_username, create_user
+    body     = await request.json()
+    username = body.get("username", "").strip()
+    email    = body.get("email", "").strip()
+    full_name= body.get("full_name") or body.get("name", "").strip()
+    password = body.get("password", "").strip()
+    role     = body.get("role", "admin").strip()
+
+    if not username or not password:
+        raise HTTPException(status_code=422, detail="Username and password are required.")
+    if get_user_by_username(db, username):
+        raise HTTPException(status_code=409, detail="Username already exists.")
+
+    user = create_user(db, username=username, email=email or f"{username}@court.gov.ng",
+                       full_name=full_name or username, password=password, role=role)
+    return _fmt_user(user)
+
+
+@router.get("/users/{user_id}", summary="Get a user by ID")
+def get_user_alias(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    from db.crud import get_user_by_id
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return _fmt_user(user)
+
+
+@router.put("/users/{user_id}", summary="Update a user")
+@router.patch("/users/{user_id}", summary="Update a user", include_in_schema=False)
+async def update_user_alias(
+    user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    from db.crud import get_user_by_id
+    from db.models import User
+    body = await request.json()
+    user = get_user_by_id(db, user_id)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+
+    if "full_name" in body: user.full_name = body["full_name"]
+    if "name"      in body: user.full_name = body["name"]
+    if "email"     in body: user.email     = body["email"]
+    if "role"      in body: user.role      = body["role"]
+    if "is_active" in body: user.is_active = body["is_active"]
+    if "password"  in body and body["password"]:
+        from core.security import hash_password
+        user.hashed_password = hash_password(body["password"])
+
+    db.commit()
+    db.refresh(user)
+    return _fmt_user(user)
+
+
+@router.delete("/users/{user_id}", summary="Delete a user")
+def delete_user_alias(
+    user_id: str,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    from db.crud import delete_user
+    if not delete_user(db, user_id):
+        raise HTTPException(status_code=404, detail="User not found.")
+    return {"message": "User deleted successfully."}
+
+
+@router.patch("/users/{user_id}/status", summary="Toggle user active status")
+async def toggle_user_status(
+    user_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user),
+):
+    from db.crud import get_user_by_id
+    body      = await request.json()
+    is_active = body.get("is_active", True)
+    from db.crud import update_user_status
+    user = update_user_status(db, user_id, is_active)
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found.")
+    return _fmt_user(user)
